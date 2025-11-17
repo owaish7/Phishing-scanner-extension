@@ -1,16 +1,14 @@
-// service_worker.js
-
 const API_ENDPOINT = "https://phis-7.onrender.com/predict";
 const MAX_URLS = 30;           // hard cap to avoid too many requests
 const CONCURRENCY = 3;         // number of parallel requests
 const REQ_TIMEOUT_MS = 45000;  // per-request timeout (45s to handle cold starts)
 const STORAGE_KEY = 'lastScan';
 
-// Global state to track ongoing scans
-let currentScan = null; // { tabId, totalCount, scannedCount, results: [], inProgress: true }
+
+let currentScan = null; 
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  // Handle request for current scan status
+
   if (msg && msg.type === 'GET_SCAN_STATUS') {
     sendResponse({ scanStatus: currentScan });
     return;
@@ -28,10 +26,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       console.log(`Limited to first ${urlsToScan.length} of ${urls.length} URLs`);
     }
 
-    // Get the tab ID from sender
+    
     const tabId = sender.tab ? sender.tab.id : null;
 
-    // Initialize global scan state
     currentScan = {
       tabId: tabId,
       totalCount: urls.length,
@@ -41,7 +38,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       startedAt: Date.now()
     };
 
-    // Save initial state to storage
+    
     chrome.storage.local.set({ 
       [STORAGE_KEY]: { 
         results: [], 
@@ -52,20 +49,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       } 
     });
 
-    // Respond immediately - don't wait for scanning to complete
+    
     sendResponse({ 
       ok: true, 
       results: [],
       totalCount: urls.length,
       scannedCount: urlsToScan.length,
       limited: urlsToScan.length < urls.length,
-      streaming: true // indicates results will stream in
+      streaming: true 
     });
 
-    // Continue scanning asynchronously (don't await sendResponse)
+    
     (async () => {
       try {
-        // helper to check a single URL with timeout and retry
+       
         async function checkUrl(url, retryCount = 0){
           try {
             const controller = new AbortController();
@@ -79,31 +76,31 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             clearTimeout(timeoutId);
             if (!resp.ok) {
               console.error('Backend error for', url, 'Status:', resp.status);
-              // Retry once on 5xx errors (backend issues)
+             
               if (resp.status >= 500 && retryCount < 1) {
                 console.log('Retrying', url);
                 await new Promise(r => setTimeout(r, 1000)); // wait 1s
                 return checkUrl(url, retryCount + 1);
               }
-              // Default to safe on persistent backend error
+             
               const result = { url, verdict: 'safe', score: 0 };
               
-              // Add to global scan state
+            
               if (currentScan) {
                 currentScan.results.push(result);
               }
               
-              // Send individual result to popup via runtime messaging
+             
               chrome.runtime.sendMessage({ type: 'SCAN_RESULT_SINGLE', data: result }, () => {
                 if (chrome.runtime.lastError) {
-                  // Popup is closed, this is normal - ignore error
+                
                 }
               });
-              // Also send to content script for highlighting
+              
               if (sender.tab && sender.tab.id) {
                 chrome.tabs.sendMessage(sender.tab.id, { type: 'SCAN_RESULT_SINGLE', data: result }, () => {
                   if (chrome.runtime.lastError) {
-                    // Content script not available, ignore
+                   
                   }
                 });
               }
@@ -121,7 +118,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             console.log(`✓ ${url.substring(0, 40)}: ${verdict} (${prediction})`);
             const result = { url, verdict, score };
             
-            // Add to global scan state
+          
             if (currentScan) {
               currentScan.results.push(result);
             }
@@ -129,10 +126,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             // Send individual result to popup via runtime messaging
             chrome.runtime.sendMessage({ type: 'SCAN_RESULT_SINGLE', data: result }, () => {
               if (chrome.runtime.lastError) {
-                // Popup is closed, this is normal - ignore error
+                
               }
             });
-            // Also send to content script for highlighting
+           
             if (sender.tab && sender.tab.id) {
               chrome.tabs.sendMessage(sender.tab.id, { type: 'SCAN_RESULT_SINGLE', data: result }, () => {
                 if (chrome.runtime.lastError) {
@@ -152,21 +149,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             } else {
               console.warn('Error checking', url, e.message);
             }
-            // Default to safe on timeout/error instead of unknown
+           
             const result = { url, verdict: 'safe', score: 0 };
             
-            // Add to global scan state
+           
             if (currentScan) {
               currentScan.results.push(result);
             }
             
-            // Send individual result to popup via runtime messaging
+          
             chrome.runtime.sendMessage({ type: 'SCAN_RESULT_SINGLE', data: result }, () => {
               if (chrome.runtime.lastError) {
-                // Popup is closed, this is normal - ignore error
+              
               }
             });
-            // Also send to content script for highlighting
+           
             if (sender.tab && sender.tab.id) {
               chrome.tabs.sendMessage(sender.tab.id, { type: 'SCAN_RESULT_SINGLE', data: result }, () => {
                 if (chrome.runtime.lastError) {
@@ -178,7 +175,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           }
         }
 
-        // Run with limited concurrency
+      
         const results = [];
         for (let i = 0; i < urlsToScan.length; i += CONCURRENCY) {
           const slice = urlsToScan.slice(i, i + CONCURRENCY);
@@ -189,24 +186,24 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
         console.log(`Scan complete: ${results.length} processed (of ${urls.length})`);
 
-        // Mark global scan as complete
+       
         if (currentScan) {
           currentScan.inProgress = false;
           currentScan.completedAt = Date.now();
         }
 
-        // Send completion message to popup
+        
         chrome.runtime.sendMessage({ type: 'SCAN_COMPLETE', data: { 
           results, 
           totalCount: urls.length, 
           scannedCount: urlsToScan.length 
         }}, () => {
           if (chrome.runtime.lastError) {
-            // Popup is closed, this is normal - ignore error
+
           }
         });
         
-        // Mark scan as complete in storage
+      
         try {
           chrome.storage.local.set({ 
             [STORAGE_KEY]: { 
@@ -221,7 +218,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           console.log('Could not save to storage:', e);
         }
         
-        // Also send to content script if available
+      
         if (sender.tab && sender.tab.id) {
           chrome.tabs.sendMessage(sender.tab.id, { type: 'SCAN_COMPLETE', data: { 
             results, 
@@ -229,7 +226,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             scannedCount: urlsToScan.length 
           }}, () => {
             if (chrome.runtime.lastError) {
-              // Content script not available, ignore
+              
             }
           });
         }

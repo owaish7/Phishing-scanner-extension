@@ -1,4 +1,4 @@
-// popup.js — improved UI wiring
+
 const scanBtn = document.getElementById('scanBtn');
 const status = document.getElementById('status');
 const resultsEl = document.getElementById('results');
@@ -28,16 +28,16 @@ function renderEmpty(message) {
 // load cached results if present
 async function loadCachedResults() {
   try {
-    // First check if there's an active scan in the service worker
+    
     chrome.runtime.sendMessage({ type: 'GET_SCAN_STATUS' }, (response) => {
-      // Check global scan state from service worker
+      
       const globalScan = response && response.scanStatus;
       
-      // Load from storage
+   
       chrome.storage.local.get([STORAGE_KEY], (obj) => {
         const cached = obj[STORAGE_KEY];
         
-        // If global scan exists and is in progress, show that
+      
         if (globalScan && globalScan.inProgress === true) {
           setStatus(`Scan in progress — ${globalScan.results.length} of ${globalScan.scannedCount} results received...`);
           clearResults();
@@ -46,11 +46,11 @@ async function loadCachedResults() {
           return;
         }
         
-        // No active global scan - check storage
+      
         if (cached && Array.isArray(cached.results) && cached.results.length) {
-          // If global scan is complete or doesn't exist, mark storage as complete too
+         
           if (!globalScan || globalScan.inProgress === false) {
-            // Update storage to mark as complete if it's not already
+           
             if (cached.inProgress === true) {
               cached.inProgress = false;
               chrome.storage.local.set({ [STORAGE_KEY]: cached });
@@ -141,7 +141,7 @@ scanBtn.addEventListener('click', async () => {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab || !tab.id) { setStatus('No active tab'); scanBtn.disabled = false; return; }
 
-    // First, try to inject content script if it's not already there
+  
     try {
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
@@ -149,11 +149,11 @@ scanBtn.addEventListener('click', async () => {
       });
       console.log('Content script injected');
     } catch (e) {
-      // Content script might already be there, that's ok
+      
       console.log('Content script already present or injection failed:', e);
     }
 
-    // Small delay to let content script initialize
+ 
     await new Promise(resolve => setTimeout(resolve, 100));
 
     chrome.tabs.sendMessage(tab.id, { type: 'REQUEST_SCAN' }, (resp) => {
@@ -186,7 +186,7 @@ scanBtn.addEventListener('click', async () => {
           console.error('Failed to reset cache:', e);
         }
 
-        // Show initial scanning status
+      
         if (r.streaming) {
           if (typeof r.totalCount === 'number' && typeof r.scannedCount === 'number') {
             setStatus(`Scanning ${r.scannedCount} of ${r.totalCount} links... 0 results received`, true);
@@ -194,7 +194,7 @@ scanBtn.addEventListener('click', async () => {
             setStatus('Scanning...', true);
           }
         } else {
-          // Non-streaming mode (shouldn't happen but just in case)
+         
           scanBtn.disabled = false;
           if (typeof r.totalCount === 'number' && typeof r.scannedCount === 'number') {
             setStatus(`Scan complete: ${r.scannedCount} of ${r.totalCount} links${r.limited ? ' (limited)' : ''}`);
@@ -229,15 +229,15 @@ document.addEventListener('DOMContentLoaded', () => {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === 'SCAN_RESULT_SINGLE') {
     const item = msg.data;
-    // Add result to UI immediately
+    
     resultsEl.appendChild(createResultItem(item));
-    // Update status WITHOUT spinner
+  
     const currentCount = resultsEl.querySelectorAll('.result').length;
     setStatus(`Scanning... ${currentCount} results received`);
-    // Keep button disabled during active scan
+   
     scanBtn.disabled = true;
     
-    // Cache partial results immediately as they come in
+   
     try {
       chrome.storage.local.get([STORAGE_KEY], (obj) => {
         const cached = obj[STORAGE_KEY] || { results: [], scannedAt: Date.now() };
@@ -251,17 +251,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   }
   if (msg && msg.type === 'SCAN_COMPLETE') {
-    // Final status update when scan completes
+   
     const data = msg.data;
     setStatus(`Scan complete: ${data.scannedCount} of ${data.totalCount} links`);
-    scanBtn.disabled = false; // Re-enable button
+    scanBtn.disabled = false; 
     
     // Cache all results and mark as complete
     try {
       chrome.storage.local.set({ [STORAGE_KEY]: { 
         results: data.results || [], 
         scannedAt: Date.now(),
-        inProgress: false, // Mark as completed
+        inProgress: false, 
         totalCount: data.totalCount,
         scannedCount: data.scannedCount
       } });
