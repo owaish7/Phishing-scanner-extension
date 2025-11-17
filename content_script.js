@@ -1,4 +1,3 @@
-// content_script.js
 
 function extractLinks() {
   const anchors = Array.from(document.querySelectorAll('a[href]'));
@@ -26,7 +25,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ links: extractLinks() });
   }
   if (msg && msg.type === 'SCAN_RESULT_SINGLE') {
-    // Handle single result as it comes in
     const item = msg.data;
     if (item.verdict === 'unsafe') {
       document.querySelectorAll('a[href]').forEach(a => {
@@ -42,4 +40,4 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
-// Optional: observe dynamic DOM changes and re-scan server-side only when user triggers the scan (keeps it simple for course)
+
