@@ -1,0 +1,26 @@
+# Node modules (if using mock backend)
+node_modules/
+phish-mock-backend/node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+.cache/
+
+# Package locks (optional - include if you want reproducible builds)
+# package-lock.json

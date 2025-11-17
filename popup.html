@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{--bg:#ffffff;--muted:#6b7280;--accent:#2563eb;--danger:#dc2626;--warn:#f59e0b}
+    *{box-sizing:border-box}
+    body{font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:#0f172a;margin:0;padding:12px;width:360px}
+    .container{display:flex;flex-direction:column;gap:12px}
+    .header{display:flex;align-items:center;gap:10px}
+    .logo{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#5eead4,#60a5fa);border-radius:8px;box-shadow:0 2px 8px rgba(2,6,23,.08)}
+    h1{font-size:16px;margin:0}
+    .subtitle{font-size:12px;color:var(--muted)}
+    .controls{display:flex;gap:8px;align-items:center}
+    button.primary{background:var(--accent);color:white;border:0;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+    button.primary[disabled]{opacity:.6;cursor:default}
+    .status{font-size:12px;color:var(--muted)}
+    .results{max-height:320px;overflow:auto;padding:0;margin:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+    .result{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:#f8fafc;border:1px solid #eef2ff}
+    .result .left{display:flex;gap:8px;align-items:center;min-width:0}
+    .badge{font-size:11px;padding:4px 6px;border-radius:999px;color:white}
+    .badge.safe{background:#10b981}
+    .badge.unsafe{background:var(--danger)}
+    .actions{display:flex;gap:6px}
+    .icon-btn{background:transparent;border:0;padding:6px;border-radius:6px;cursor:pointer;color:var(--muted)}
+    .icon-btn:hover{background:rgba(2,6,23,.03)}
+    .small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,.08);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty{font-size:13px;color:var(--muted);text-align:center;padding:18px}
+    .footer{font-size:11px;color:var(--muted);text-align:center;padding-top:6px}
+    a.link{color:var(--accent);text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo" aria-hidden>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0z" fill="#fff" opacity=".12"/><path d="M7 12a5 5 0 119 0" stroke="#fff" stroke-width="1.5" opacity=".9"/></svg>
+      </div>
+      <div style="min-width:0">
+        <h1>Phish Scanner</h1>
+        <div class="subtitle">Quickly scan links on the current page</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="scanBtn" class="primary">Scan current page</button>
+      <div id="status" class="status" aria-live="polite"></div>
+    </div>
+
+    <ul id="results" class="results" role="list"></ul>
+
+    <div class="footer">
+      <span>Built-in mock backend — see <a href="#" id="openBackend" class="link">test page</a></span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
